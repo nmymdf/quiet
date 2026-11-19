@@ -185,7 +185,8 @@ private fun OnContent(s: ScreenState, a: ScreenActions) {
         StatusItem(
             s.applied.calls && s.applied.contacts,
             R.drawable.ic_m_call,
-            "來電全部拒接（含連續來電）",
+            "來電全部拒接",
+            sub = "含連續打來的電話",
         )
     }
     Spacer(Modifier.height(12.dp))
@@ -439,7 +440,7 @@ fun CheckBadge(ok: Boolean, size: Dp = 40.dp) {
 }
 
 @Composable
-private fun StatusItem(ok: Boolean, icon: Int, label: String) {
+private fun StatusItem(ok: Boolean, icon: Int, label: String, sub: String? = null) {
     DarkCard {
         Row(
             modifier = Modifier
@@ -457,12 +458,16 @@ private fun StatusItem(ok: Boolean, icon: Int, label: String) {
                 modifier = Modifier.size(28.dp),
             )
             Spacer(Modifier.width(14.dp))
-            Text(
-                if (ok) label else "$label（未設定）",
-                fontSize = 20.sp,
-                color = Pal.Text,
-                modifier = Modifier.weight(1f),
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    if (ok) label else "$label（未設定）",
+                    fontSize = 20.sp,
+                    color = Pal.Text,
+                )
+                if (sub != null) {
+                    Text(sub, fontSize = 17.sp, color = Pal.Sub)
+                }
+            }
         }
     }
 }
@@ -546,7 +551,7 @@ private fun PowerCard(on: Boolean, onGo: () -> Unit) {
             if (!on) {
                 Spacer(Modifier.height(10.dp))
                 Text(
-                    "省電要自己按一下開關（系統不讓 App 自動開）",
+                    "省電要自己按一下開關\n（系統不讓 App 自動開）",
                     fontSize = 17.sp,
                     color = Pal.Sub,
                     textAlign = TextAlign.Center,
@@ -693,12 +698,13 @@ private fun SetupCard(perms: Quiet.Perms, a: ScreenActions) {
             Divider()
             SetupRow(perms.contacts, "3. 讀取聯絡人", "聯絡人打來也能拒接，並顯示是誰打來。", a.onContacts)
             Divider()
-            SetupRow(perms.screening, "4. 來電過濾", "出現詢問時，選「一鍵安靜」並設為預設。", a.onScreening)
+            SetupRow(perms.screening, "4. 來電過濾", "跳出詢問時，選「一鍵安靜」。", a.onScreening)
             Spacer(Modifier.height(10.dp))
             Text(
-                "如果開關是灰色、顯示「受限設定」：按下面按鈕，點右上角「⋮」→「允許受限設定」，再回來設定。",
+                "如果開關是灰色（受限設定）：\n按下面按鈕，點右上角「⋮」，\n選「允許受限設定」，再回來設定。",
                 fontSize = 17.sp,
                 color = Pal.Sub,
+                lineHeight = 26.sp,
             )
             Spacer(Modifier.height(12.dp))
             Box(
@@ -734,7 +740,9 @@ private fun SetupRow(done: Boolean, title: String, desc: String, onGo: () -> Uni
             .padding(vertical = 10.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 52.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(

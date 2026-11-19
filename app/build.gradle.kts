@@ -11,8 +11,8 @@ android {
         applicationId = "com.archie.quiet"
         minSdk = 29
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1"
+        versionCode = 2
+        versionName = "0.2"
     }
 
     // 與鬧鐘 App 同一把金鑰；每版都要用它簽，才能覆蓋更新

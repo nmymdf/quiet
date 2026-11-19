@@ -94,6 +94,8 @@ class MainActivity : ComponentActivity() {
             val applied = Quiet.applied(this)
             val calls = Quiet.calls(this)
             val startedAt = Quiet.startedAt(this)
+            val powerSave = Quiet.isPowerSave(this)
+            val powerLeftOn = Quiet.powerSaveLeftOn(this)
             QuietTheme {
                 MainScreen(
                     on = on,
@@ -101,6 +103,8 @@ class MainActivity : ComponentActivity() {
                     applied = applied,
                     calls = calls,
                     startedAt = startedAt,
+                    powerSave = powerSave,
+                    powerLeftOn = powerLeftOn,
                     version = version,
                     onToggle = {
                         Quiet.toggle(this)
@@ -118,6 +122,7 @@ class MainActivity : ComponentActivity() {
                     onContacts = { contactsLauncher.launch(Manifest.permission.READ_CONTACTS) },
                     onScreening = { requestScreeningRole() },
                     onAppInfo = { openAppInfo() },
+                    onPowerSave = { openPowerSave() },
                     onClearCalls = {
                         Quiet.clearCalls(this)
                         tick++
@@ -152,6 +157,18 @@ class MainActivity : ComponentActivity() {
                 Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")),
             )
         } catch (_: Exception) {
+        }
+    }
+
+    /** 系統不讓 App 直接開關省電模式，只能打開設定頁讓使用者按一下。 */
+    private fun openPowerSave() {
+        try {
+            startActivity(Intent(Settings.ACTION_BATTERY_SAVER_SETTINGS))
+        } catch (_: Exception) {
+            try {
+                startActivity(Intent(Intent.ACTION_POWER_USAGE_SUMMARY))
+            } catch (_: Exception) {
+            }
         }
     }
 
@@ -213,6 +230,8 @@ fun MainScreen(
     applied: Quiet.Applied,
     calls: List<Quiet.BlockedCall>,
     startedAt: Long,
+    powerSave: Boolean,
+    powerLeftOn: Boolean,
     version: String,
     onToggle: () -> Unit,
     onDnd: () -> Unit,
@@ -220,6 +239,7 @@ fun MainScreen(
     onContacts: () -> Unit,
     onScreening: () -> Unit,
     onAppInfo: () -> Unit,
+    onPowerSave: () -> Unit,
     onClearCalls: () -> Unit,
 ) {
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -255,7 +275,7 @@ fun MainScreen(
                 Spacer(Modifier.height(20.dp))
 
                 if (on) {
-                    OnStatus(applied, calls.size, startedAt)
+                    OnStatus(applied, calls.size, startedAt, powerSave, onPowerSave)
                 } else {
                     Text(
                         "點一下圓圈，全部安靜",
@@ -264,6 +284,10 @@ fun MainScreen(
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    if (powerLeftOn) {
+                        Spacer(Modifier.height(20.dp))
+                        PowerLeftCard(onPowerSave)
+                    }
                     if (calls.isNotEmpty()) {
                         Spacer(Modifier.height(20.dp))
                         CallsCard(calls, onClearCalls)
@@ -321,16 +345,32 @@ fun BigButton(on: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-fun OnStatus(applied: Quiet.Applied, blocked: Int, startedAt: Long) {
+fun OnStatus(
+    applied: Quiet.Applied,
+    blocked: Int,
+    startedAt: Long,
+    powerSave: Boolean,
+    onPowerSave: () -> Unit,
+) {
     Column(
         modifier = Modifier
             .widthIn(max = 380.dp)
             .fillMaxWidth(),
     ) {
         StatusRow(applied.ringer, "鈴聲靜音")
-        StatusRow(applied.dnd, "勿擾全擋")
+        StatusRow(applied.dnd, "勿擾全擋（含鬧鐘）")
         StatusRow(applied.brightness, "螢幕調到最暗")
         StatusRow(applied.calls && applied.contacts, "來電全部拒接（含連續來電）")
+        PowerRow(powerSave, onPowerSave)
+    }
+    if (!powerSave) {
+        Text(
+            "省電要自己按一下開關（系統不讓 App 自動開）",
+            fontSize = 17.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
     Spacer(Modifier.height(12.dp))
     if (blocked > 0) {
@@ -403,6 +443,78 @@ fun StatusRow(ok: Boolean, label: String) {
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.weight(1f),
         )
+    }
+}
+
+@Composable
+fun PowerRow(on: Boolean, onGo: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            if (on) "✓" else "•",
+            fontSize = 26.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (on) okColor() else MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.width(44.dp),
+        )
+        Text(
+            "省電模式",
+            fontSize = 22.sp,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.weight(1f),
+        )
+        if (!on) {
+            Button(
+                onClick = onGo,
+                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp),
+            ) {
+                Text("去打開", fontSize = 20.sp)
+            }
+        }
+    }
+}
+
+@Composable
+fun PowerLeftCard(onGo: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                "省電模式還開著",
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "不需要的話，按下面去關掉",
+                fontSize = 18.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onGo,
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(vertical = 12.dp),
+            ) {
+                Text("去關閉省電", fontSize = 20.sp)
+            }
+        }
     }
 }
 

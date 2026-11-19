@@ -12,6 +12,8 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.media.AudioManager
 import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
 import android.provider.ContactsContract
 import android.provider.Settings
 import android.service.quicksettings.TileService
@@ -98,6 +100,7 @@ object Quiet {
         // 1. 記下原本的狀態
         e.putInt("prevFilter", nm.currentInterruptionFilter)
         e.putInt("prevRinger", am.ringerMode)
+        e.putBoolean("prevPowerSave", isPowerSave(c))
         val canBright = Settings.System.canWrite(c)
         if (canBright) {
             e.putInt("prevBright", Settings.System.getInt(cr, Settings.System.SCREEN_BRIGHTNESS, 128))
@@ -118,13 +121,33 @@ object Quiet {
             false
         }
 
-        // 3. 勿擾：完全靜音（連重複來電、鬧鐘的例外都不放行）
+        // 3. 勿擾：用三星自己的勿擾方式，但暫時不留任何例外（鬧鐘、媒體、重複來電都擋），
+        //    並且通知進來不亮螢幕、不跳出。原本的勿擾例外先記下，關閉時還原。
+        //    （v0.1 用「完全靜音」，三星仍會放行鬧鐘，所以改成這樣）
+        e.putBoolean("policySaved", false)
         val dndOk = if (nm.isNotificationPolicyAccessGranted) {
             try {
-                nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
+                val old = nm.notificationPolicy
+                e.putInt("pCats", old.priorityCategories)
+                    .putInt("pCall", old.priorityCallSenders)
+                    .putInt("pMsg", old.priorityMessageSenders)
+                    .putInt("pVis", old.suppressedVisualEffects)
+                if (Build.VERSION.SDK_INT >= 30) e.putInt("pConv", old.priorityConversationSenders)
+                e.putBoolean("policySaved", true)
+            } catch (_: Exception) {
+            }
+            try {
+                nm.notificationPolicy = quietPolicy()
+                nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_PRIORITY)
                 true
             } catch (_: Exception) {
-                false
+                // 退回 v0.1 的做法
+                try {
+                    nm.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
+                    true
+                } catch (_: Exception) {
+                    false
+                }
             }
         } else {
             false
@@ -169,8 +192,14 @@ object Quiet {
         val am = c.getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val cr = c.contentResolver
 
-        // 先關勿擾，再還原鈴聲（勿擾開著時改鈴聲可能被擋）
+        // 先還原勿擾例外與勿擾，再還原鈴聲（勿擾開著時改鈴聲可能被擋）
         if (nm.isNotificationPolicyAccessGranted) {
+            if (p.getBoolean("policySaved", false)) {
+                try {
+                    nm.notificationPolicy = savedPolicy(p)
+                } catch (_: Exception) {
+                }
+            }
             var prev = p.getInt("prevFilter", NotificationManager.INTERRUPTION_FILTER_ALL)
             if (prev == NotificationManager.INTERRUPTION_FILTER_UNKNOWN) {
                 prev = NotificationManager.INTERRUPTION_FILTER_ALL
@@ -199,6 +228,49 @@ object Quiet {
         cancelAutoOff(c)
         refreshViews(c)
     }
+
+    // ---------- 勿擾例外 ----------
+
+    /** 安靜中的勿擾：沒有任何例外；通知進來不亮螢幕、不跳出、不閃燈（通知列仍看得到）。 */
+    private fun quietPolicy(): NotificationManager.Policy {
+        val vis = NotificationManager.Policy.SUPPRESSED_EFFECT_FULL_SCREEN_INTENT or
+            NotificationManager.Policy.SUPPRESSED_EFFECT_LIGHTS or
+            NotificationManager.Policy.SUPPRESSED_EFFECT_PEEK or
+            NotificationManager.Policy.SUPPRESSED_EFFECT_AMBIENT
+        val starred = NotificationManager.Policy.PRIORITY_SENDERS_STARRED
+        return if (Build.VERSION.SDK_INT >= 30) {
+            NotificationManager.Policy(
+                0, starred, starred, vis,
+                NotificationManager.Policy.CONVERSATION_SENDERS_NONE,
+            )
+        } else {
+            NotificationManager.Policy(0, starred, starred, vis)
+        }
+    }
+
+    private fun savedPolicy(p: SharedPreferences): NotificationManager.Policy {
+        val cats = p.getInt("pCats", 0)
+        val call = p.getInt("pCall", NotificationManager.Policy.PRIORITY_SENDERS_STARRED)
+        val msg = p.getInt("pMsg", NotificationManager.Policy.PRIORITY_SENDERS_STARRED)
+        val vis = p.getInt("pVis", 0)
+        return if (Build.VERSION.SDK_INT >= 30 && p.contains("pConv")) {
+            NotificationManager.Policy(cats, call, msg, vis, p.getInt("pConv", 0))
+        } else {
+            NotificationManager.Policy(cats, call, msg, vis)
+        }
+    }
+
+    // ---------- 省電模式（系統不讓 App 直接開關，只能幫忙打開設定頁） ----------
+
+    fun isPowerSave(c: Context): Boolean = try {
+        (c.getSystemService(Context.POWER_SERVICE) as PowerManager).isPowerSaveMode
+    } catch (_: Exception) {
+        false
+    }
+
+    /** 關閉安靜後，省電模式是安靜期間才打開的 → 提醒要不要關。 */
+    fun powerSaveLeftOn(c: Context): Boolean =
+        !isOn(c) && isPowerSave(c) && !prefs(c).getBoolean("prevPowerSave", true)
 
     // ---------- 開機後補排自動恢復 ----------
 

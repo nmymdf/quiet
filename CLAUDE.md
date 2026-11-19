@@ -19,5 +19,5 @@
 - 金鑰：`app/archie.keystore`（與鬧鐘 App 同一把 archie 金鑰，SHA-256 8C:68:71:09:…:63:B6:DE）。雲端 Claude 無法設定 Actions 機密，所以跟鬧鐘 repo 一樣放在 repo 裡；workflow 也支援機密 `QUIET_KEYSTORE_B64`
 
 ## 目前狀態（每次改版更新）
-- Android v0.1；iPhone 不需要
+- Android v0.2；iPhone 不需要
 - 還沒決定的事：無

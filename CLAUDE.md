@@ -1,5 +1,7 @@
 # 一鍵安靜 — 給 Claude 的專案說明
 
+**v0.3 之後已合併進 nmymdf/alarm（鬧鐘提醒 v0.16 起），本 repo 停止更新；要改一鍵安靜請到 nmymdf/alarm。**
+
 **先讀 https://github.com/nmymdf/READFIRST（README.md 與其他檔案）：家族 App 的分工與規則。**
 這份只寫這個 App 自己的事。
 

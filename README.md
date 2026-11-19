@@ -1,3 +1,5 @@
+> **已合併進「鬧鐘提醒」（nmymdf/alarm v0.16 起），本 repo 停止更新。** 新版在 `nmymdf/alarm` 的 `app/src/main/java/com/archie/alarm/quiet/`，桌面上仍是獨立的「一鍵安靜」圖示。
+
 # 一鍵安靜
 
 看電影、聽音樂會時，點一下就讓 Android 手機全部安靜；再點一下恢復原狀。作者：ArchieKUO

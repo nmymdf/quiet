@@ -11,8 +11,8 @@ android {
         applicationId = "com.archie.quiet"
         minSdk = 29
         targetSdk = 34
-        versionCode = 2
-        versionName = "0.2"
+        versionCode = 3
+        versionName = "0.3"
     }
 
     // 與鬧鐘 App 同一把金鑰；每版都要用它簽，才能覆蓋更新
@@ -43,6 +43,15 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
     }
+    // 畫面預覽截圖（Robolectric），只在 GitHub Actions 跑，不影響 App
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            all {
+                it.maxHeapSize = "2g"
+            }
+        }
+    }
 }
 
 dependencies {
@@ -52,4 +61,11 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.activity:activity-compose:1.9.0")
     implementation("androidx.core:core-ktx:1.13.1")
+
+    testImplementation(platform("androidx.compose:compose-bom:2024.06.00"))
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.robolectric:robolectric:4.12.2")
+    testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation(platform("androidx.compose:compose-bom:2024.06.00"))
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

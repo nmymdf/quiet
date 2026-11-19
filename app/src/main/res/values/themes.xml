@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.Quiet" parent="android:Theme.Material.Light.NoActionBar" />
+    <style name="Theme.Quiet" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/quiet_bg</item>
+        <item name="android:statusBarColor">@color/quiet_bg</item>
+        <item name="android:navigationBarColor">@color/quiet_bg</item>
+    </style>
+    <color name="quiet_bg">#FF0A1013</color>
     <color name="ic_launcher_background">#263238</color>
 </resources>

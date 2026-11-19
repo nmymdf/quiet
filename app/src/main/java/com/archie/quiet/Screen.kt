@@ -701,7 +701,7 @@ private fun SetupCard(perms: Quiet.Perms, a: ScreenActions) {
             SetupRow(perms.screening, "4. 來電過濾", "跳出詢問時，選「一鍵安靜」。", a.onScreening)
             Spacer(Modifier.height(10.dp))
             Text(
-                "如果開關是灰色（受限設定）：\n按下面按鈕，點右上角「⋮」，\n選「允許受限設定」，再回來設定。",
+                "如果開關是灰色（受限設定）：\n按下面按鈕，點右上角的三個點，\n選「允許受限設定」，再回來設定。",
                 fontSize = 17.sp,
                 color = Pal.Sub,
                 lineHeight = 26.sp,

@@ -16,8 +16,9 @@
 ## 常用指令
 - 推到 `main` → GitHub Actions 編譯 → `apk` 分支的 `quiet-v<版本>.apk`
 - 交付：下載 APK，包成 `quiet-v<版本>.zip` 傳給爸爸（他的手機不能直接下載 .apk）
+- 畫面預覽：每次推送後 `shots` 分支會有 4 張截圖（Robolectric），交付前先看對齊
 - 金鑰：`app/archie.keystore`（與鬧鐘 App 同一把 archie 金鑰，SHA-256 8C:68:71:09:…:63:B6:DE）。雲端 Claude 無法設定 Actions 機密，所以跟鬧鐘 repo 一樣放在 repo 裡；workflow 也支援機密 `QUIET_KEYSTORE_B64`
 
 ## 目前狀態（每次改版更新）
-- Android v0.2；iPhone 不需要
+- Android v0.3；iPhone 不需要
 - 還沒決定的事：無
